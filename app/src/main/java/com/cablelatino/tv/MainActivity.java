@@ -4,36 +4,108 @@ import android.app.Activity;
 import android.os.Bundle;
 import android.graphics.Color;
 import android.view.Gravity;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+import android.widget.*;
+import android.media.MediaPlayer;
+import android.content.Context;
+import java.net.*;
+import java.io.*;
+import java.util.ArrayList;
 
 public class MainActivity extends Activity {
+    LinearLayout pantalla, canales;
+    EditText entrada;
+    VideoView video;
+    ArrayList<String> nombres = new ArrayList<>();
+    ArrayList<String> enlaces = new ArrayList<>();
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        LinearLayout pantalla = new LinearLayout(this);
-        pantalla.setOrientation(LinearLayout.VERTICAL);
-        pantalla.setGravity(Gravity.CENTER);
-        pantalla.setPadding(24, 24, 24, 24);
+    public void onCreate(Bundle b) {
+        super.onCreate(b);
+        pantalla = new LinearLayout(this);
+        pantalla.setOrientation(1);
+        pantalla.setPadding(16,16,16,16);
         pantalla.setBackgroundColor(Color.BLACK);
 
         TextView titulo = new TextView(this);
         titulo.setText("CABLE LATINO TV");
-        titulo.setTextSize(30);
         titulo.setTextColor(Color.RED);
+        titulo.setTextSize(26);
         titulo.setGravity(Gravity.CENTER);
-
-        TextView mensaje = new TextView(this);
-        mensaje.setText("Bienvenido a Cable Latino TV");
-        mensaje.setTextSize(18);
-        mensaje.setTextColor(Color.WHITE);
-        mensaje.setGravity(Gravity.CENTER);
-
         pantalla.addView(titulo);
-        pantalla.addView(mensaje);
 
+        entrada = new EditText(this);
+        entrada.setHint("Pega tu URL M3U");
+        entrada.setSingleLine(true);
+        entrada.setTextColor(Color.WHITE);
+        entrada.setHintTextColor(Color.LTGRAY);
+        pantalla.addView(entrada);
+
+        Button cargar = new Button(this);
+        cargar.setText("CARGAR CANALES");
+        pantalla.addView(cargar);
+
+        video = new VideoView(this);
+        pantalla.addView(video, new LinearLayout.LayoutParams(-1, 240));
+        MediaController controles = new MediaController(this);
+        video.setMediaController(controles);
+
+        ScrollView scroll = new ScrollView(this);
+        canales = new LinearLayout(this);
+        canales.setOrientation(1);
+        scroll.addView(canales);
+        pantalla.addView(scroll);
         setContentView(pantalla);
+
+        cargar.setOnClickListener(v -> cargarLista());
+    }
+
+    void cargarLista() {
+        String url = entrada.getText().toString().trim();
+        if (!url.startsWith("https://") && !url.startsWith("http://")) {
+            Toast.makeText(this, "Introduce una URL valida", Toast.LENGTH_LONG).show();
+            return;
+        }
+        canales.removeAllViews();
+        new Thread(() -> {
+            try {
+                HttpURLConnection c = (HttpURLConnection)new URL(url).openConnection();
+                c.setConnectTimeout(10000);
+                c.setReadTimeout(15000);
+                BufferedReader r = new BufferedReader(new InputStreamReader(c.getInputStream()));
+                ArrayList<String> ns = new ArrayList<>();
+                ArrayList<String> es = new ArrayList<>();
+                String linea, nombre = "";
+                while ((linea = r.readLine()) != null) {
+                    linea = linea.trim();
+                    if (linea.startsWith("#EXTINF")) {
+                        int pos = linea.lastIndexOf(",");
+                        nombre = pos >= 0 ? linea.substring(pos+1).trim() : "Canal";
+                    } else if (linea.startsWith("http://") || linea.startsWith("https://")) {
+                        ns.add(nombre.isEmpty() ? "Canal" : nombre);
+                        es.add(linea);
+                        nombre = "";
+                    }
+                }
+                r.close();
+                runOnUiThread(() -> mostrar(ns, es));
+            } catch (Exception ex) {
+                runOnUiThread(() -> Toast.makeText(this, "Error al cargar M3U: " + ex.getMessage(), Toast.LENGTH_LONG).show());
+            }
+        }).start();
+    }
+
+    void mostrar(ArrayList<String> ns, ArrayList<String> es) {
+        canales.removeAllViews();
+        for (int i=0; i<ns.size(); i++) {
+            final String enlace = es.get(i);
+            Button boton = new Button(this);
+            boton.setText(ns.get(i));
+            canales.addView(boton);
+            boton.setOnClickListener(v -> {
+                video.setVideoPath(enlace);
+                video.start();
+            });
+        }
+        Toast.makeText(this, ns.size()+" canales cargados", Toast.LENGTH_LONG).show();
     }
 }
