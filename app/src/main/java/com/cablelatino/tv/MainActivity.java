@@ -94,18 +94,59 @@ public class MainActivity extends Activity {
         }).start();
     }
 
-    void mostrar(ArrayList<String> ns, ArrayList<String> es) {
-        canales.removeAllViews();
-        for (int i=0; i<ns.size(); i++) {
-            final String enlace = es.get(i);
-            Button boton = new Button(this);
-            boton.setText(ns.get(i));
-            canales.addView(boton);
-            boton.setOnClickListener(v -> {
-                video.setVideoPath(enlace);
-                video.start();
-            });
-        }
-        Toast.makeText(this, ns.size()+" canales cargados", Toast.LENGTH_LONG).show();
+    
+void mostrar(ArrayList<String> ns, ArrayList<String> es) {
+    canales.removeAllViews();
+
+    if (ns.isEmpty()) {
+        Toast.makeText(this, "No se encontraron canales",
+            Toast.LENGTH_LONG).show();
+        return;
     }
+
+    mostrarLote(ns, es, 0);
+}
+
+void mostrarLote(ArrayList<String> ns,
+                 ArrayList<String> es, int inicio) {
+    int fin = Math.min(inicio + 25, ns.size());
+
+    for (int i = inicio; i < fin; i++) {
+        final String enlace = es.get(i);
+
+        Button boton = new Button(this);
+        boton.setText(ns.get(i));
+        canales.addView(boton);
+
+        boton.setOnClickListener(v -> {
+            video.setVideoPath(enlace);
+            video.start();
+        });
+    }
+
+    if (fin < ns.size()) {
+        Button mas = new Button(this);
+        mas.setText("CARGAR MÁS CANALES");
+        canales.addView(mas);
+
+        mas.setOnClickListener(v -> {
+            canales.removeView(mas);
+            mostrarLote(ns, es, fin);
+        });
+    }
+}
+
+        
+        
+            
+            
+            
+        
+            
+            
+    
+        
+        
+    
+
 }
