@@ -126,7 +126,7 @@ void mostrar(ArrayList<String> ns, ArrayList<String> es) {
 
 void mostrarLote(ArrayList<String> ns,
                  ArrayList<String> es, int inicio) {
-    int fin = ns.size();
+    int fin = Math.min(inicio + 25, ns.size());
 
     for (int i = inicio; i < fin; i++) {
         final String enlace = es.get(i);
