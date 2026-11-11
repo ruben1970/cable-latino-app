@@ -6,6 +6,10 @@ import android.graphics.Color;
 import android.view.Gravity;
 import android.widget.*;
 import android.media.MediaPlayer;
+import androidx.media3.common.MediaItem;
+import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.ui.PlayerView;
+import androidx.media3.common.PlaybackException;
 import android.content.Context;
 import java.net.*;
 import java.io.*;
@@ -14,7 +18,8 @@ import java.util.ArrayList;
 public class MainActivity extends Activity {
     LinearLayout pantalla, canales;
     EditText entrada;
-    VideoView video;
+    PlayerView video;
+ExoPlayer reproductor;
     ArrayList<String> nombres = new ArrayList<>();
     ArrayList<String> enlaces = new ArrayList<>();
 
@@ -44,10 +49,22 @@ public class MainActivity extends Activity {
         cargar.setText("CARGAR CANALES");
         pantalla.addView(cargar);
 
-        video = new VideoView(this);
-        pantalla.addView(video, new LinearLayout.LayoutParams(-1, 240));
-        MediaController controles = new MediaController(this);
-        video.setMediaController(controles);
+    
+reproductor = new ExoPlayer.Builder(this).build();
+
+video = new PlayerView(this);
+video.setPlayer(reproductor);
+video.setUseController(true);
+
+pantalla.addView(video,
+    new LinearLayout.LayoutParams(
+        -1, 500
+    )
+);
+
+        
+        
+        
 
         ScrollView scroll = new ScrollView(this);
         canales = new LinearLayout(this);
@@ -119,8 +136,14 @@ void mostrarLote(ArrayList<String> ns,
         canales.addView(boton);
 
         boton.setOnClickListener(v -> {
-            video.setVideoPath(enlace);
-            video.start();
+            
+reproductor.stop();
+reproductor.clearMediaItems();
+reproductor.setMediaItem(MediaItem.fromUri(enlace));
+reproductor.prepare();
+reproductor.play();
+
+            
         });
     }
 
@@ -148,5 +171,13 @@ void mostrarLote(ArrayList<String> ns,
         
         
     
+
+@Override
+protected void onDestroy() {
+    if (reproductor != null) {
+        reproductor.release();
+    }
+    super.onDestroy();
+}
 
 }
